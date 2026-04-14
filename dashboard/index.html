@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SPR osastosivujen QA-dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #222; }
+    h1, h2 { margin-bottom: 8px; }
+    .muted { color: #666; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: 16px 0 24px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; background: #fafafa; }
+    .big { font-size: 28px; font-weight: bold; }
+    .row { display: grid; gap: 24px; grid-template-columns: 1fr 1fr; margin: 24px 0; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }
+    th { background: #f3f3f3; }
+    select, input { padding: 8px; margin-right: 8px; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+    .ok { background: #e8f5e9; }
+    .warn { background: #fff8e1; }
+    .err { background: #ffebee; }
+    @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h1>SPR osastosivujen QA-dashboard</h1>
+  <div id="meta" class="muted"></div>
+
+  <div class="grid" id="totals"></div>
+
+  <h2>Tärkeimmät havainnot</h2>
+  <ul id="highlights"></ul>
+
+  <div style="margin: 20px 0;">
+    <label for="districtFilter">Piiri:</label>
+    <select id="districtFilter"></select>
+
+    <label for="statusFilter">Tila:</label>
+    <select id="statusFilter">
+      <option value="">Kaikki</option>
+      <option value="OK">OK</option>
+      <option value="Puutteellinen">Puutteellinen</option>
+      <option value="Virhe">Virhe</option>
+    </select>
+
+    <label for="searchBox">Haku:</label>
+    <input id="searchBox" placeholder="Osaston nimi..." />
+  </div>
+
+  <div class="row">
+    <div>
+      <h2>Piirit yhteensä</h2>
+      <table id="districtTable"></table>
+    </div>
+    <div>
+      <h2>Top 5 / Bottom 5</h2>
+      <div class="card">
+        <strong>Top 5</strong>
+        <ul id="top5"></ul>
+      </div>
+      <div class="card" style="margin-top: 16px;">
+        <strong>Bottom 5</strong>
+        <ul id="bottom5"></ul>
+      </div>
+    </div>
+  </div>
+
+  <h2>Osastot</h2>
+  <table id="dataTable"></table>
+
+  <script>
+    const districtFilter = document.getElementById('districtFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const searchBox = document.getElementById('searchBox');
+
+    let allRows = [];
+    let districtKey = "Piiri";
+
+    function badgeClass(value) {
+      if (value === "OK") return "badge ok";
+      if (value === "Virhe") return "badge err";
+      return "badge warn";
+    }
+
+    function renderTotals(summary) {
+      const totals = summary.totals;
+      const cards = [
+        ["Tarkistettu", totals.tarkistettu],
+        ["Rikki", totals.rikki],
+        ["Puutteellinen", totals.puutteellinen],
+        ["OK", totals.ok],
+        ["Vanhentuneet", totals.vanhentuneet],
+        ["Ilman yhteystietoja", totals.puuttuu_yhteystiedot],
+        ["Ilman uutisia", totals.puuttuu_uutiset],
+      ];
+      document.getElementById("totals").innerHTML = cards.map(([label, value]) => `
+        <div class="card">
+          <div class="muted">${label}</div>
+          <div class="big">${value}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderHighlights(summary) {
+      document.getElementById("highlights").innerHTML = summary.highlights
+        .map(x => `<li>${x}</li>`).join("");
+      document.getElementById("meta").textContent = `Päivitetty: ${summary.generated_at}`;
+    }
+
+    function renderTopBottom(summary) {
+      document.getElementById("top5").innerHTML = summary.top5
+        .map(x => `<li>${x["Osaston nimi"] ?? x["Avdelning"] ?? ""} (${x.score_text}, ${x.tila})</li>`).join("");
+      document.getElementById("bottom5").innerHTML = summary.bottom5
+        .map(x => `<li>${x["Osaston nimi"] ?? x["Avdelning"] ?? ""} (${x.score_text}, ${x.tila})</li>`).join("");
+    }
+
+    function renderDistricts(summary) {
+      const rows = summary.districts;
+      if (!rows.length) return;
+      districtKey = Object.keys(rows[0])[0];
+
+      districtFilter.innerHTML = `<option value="">Kaikki piirit</option>` +
+        rows.map(r => `<option value="${r[districtKey]}">${r[districtKey]}</option>`).join("");
+
+      document.getElementById("districtTable").innerHTML = `
+        <tr>
+          <th>${districtKey}</th>
+          <th>Osastoja</th>
+          <th>OK</th>
+          <th>Puutteellinen</th>
+          <th>Rikki</th>
+          <th>Keskipisteet</th>
+        </tr>
+        ${rows.map(r => `
+          <tr>
+            <td>${r[districtKey]}</td>
+            <td>${r.osastoja}</td>
+            <td>${r.ok}</td>
+            <td>${r.puutteellinen}</td>
+            <td>${r.rikki}</td>
+            <td>${r.keskipisteet}</td>
+          </tr>
+        `).join("")}
+      `;
+    }
+
+    function renderDataTable(rows) {
+      const cols = [
+        districtKey, "Osaston nimi", "tila", "Score", "uutisten_lukumaara",
+        "sinisten_laatikoiden_maara", "etusivun_paivitys_ika_paivina", "osasto_url"
+      ].filter(c => rows[0] && c in rows[0]);
+
+      document.getElementById("dataTable").innerHTML = `
+        <tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr>
+        ${rows.map(r => `
+          <tr>
+            ${cols.map(c => {
+              if (c === "tila") return `<td><span class="${badgeClass(r[c])}">${r[c]}</span></td>`;
+              if (c === "osasto_url") return `<td><a href="${r[c]}" target="_blank">Avaa</a></td>`;
+              return `<td>${r[c] ?? ""}</td>`;
+            }).join("")}
+          </tr>
+        `).join("")}
+      `;
+    }
+
+    function applyFilters() {
+      const district = districtFilter.value;
+      const status = statusFilter.value;
+      const q = searchBox.value.toLowerCase().trim();
+
+      const filtered = allRows.filter(r => {
+        const districtOk = !district || String(r[districtKey]) === district;
+        const statusOk = !status || r.tila === status;
+        const name = String(r["Osaston nimi"] ?? "").toLowerCase();
+        const searchOk = !q || name.includes(q);
+        return districtOk && statusOk && searchOk;
+      });
+
+      renderDataTable(filtered);
+    }
+
+    Promise.all([
+      fetch("./summary.json").then(r => r.json()),
+      fetch("./data.json").then(r => r.json()),
+    ]).then(([summary, data]) => {
+      allRows = data;
+      renderTotals(summary);
+      renderHighlights(summary);
+      renderTopBottom(summary);
+      renderDistricts(summary);
+      renderDataTable(data);
+
+      districtFilter.addEventListener("change", applyFilters);
+      statusFilter.addEventListener("change", applyFilters);
+      searchBox.addEventListener("input", applyFilters);
+    });
+  </script>
+</body>
+</html>
