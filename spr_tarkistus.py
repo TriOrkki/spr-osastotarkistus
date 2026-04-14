@@ -1,6 +1,8 @@
+import json
 import re
 import time
 from datetime import datetime, date
+from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import pandas as pd
@@ -50,12 +52,9 @@ def find_first_existing_column(df, candidates):
 def siisti_polku(arvo):
     if pd.isna(arvo):
         return ""
-
     polku = str(arvo).strip()
     if not polku:
         return ""
-
-    # Jos samassa solussa on useampi polku, käytetään ensimmäistä
     return polku.split()[0]
 
 
@@ -65,31 +64,23 @@ def bool_to_k_e(value):
 
 def parse_date_string(text):
     text = text.strip()
-    formats = [
-        "%d.%m.%Y",
-        "%Y-%m-%d",
-        "%d/%m/%Y",
-    ]
-
+    formats = ["%d.%m.%Y", "%Y-%m-%d", "%d/%m/%Y"]
     for fmt in formats:
         try:
             return datetime.strptime(text, fmt).date()
         except ValueError:
             pass
-
     return None
 
 
 def extract_dates_from_text(text):
     found_dates = []
-
     for pattern in DATE_PATTERNS:
         matches = re.findall(pattern, text)
         for match in matches:
             parsed = parse_date_string(match)
             if parsed:
                 found_dates.append(parsed)
-
     return sorted(set(found_dates))
 
 
@@ -136,8 +127,7 @@ def extract_latest_date(soup):
 def detect_old_years(text):
     years = re.findall(r"\b(19\d{2}|20\d{2})\b", text)
     years = sorted(set(int(y) for y in years))
-    suspicious = [y for y in years if y <= OLD_YEAR_LIMIT]
-    return suspicious
+    return [y for y in years if y <= OLD_YEAR_LIMIT]
 
 
 def days_since(d):
@@ -175,13 +165,11 @@ def find_first_matching_link(soup, base_url, hints):
             full_url = urljoin(base_url, href)
             if is_same_domain(full_url):
                 return full_url
-
     return ""
 
 
 def count_news_items(soup):
     count = 0
-
     articles = soup.find_all("article")
     count += len(articles)
 
@@ -260,7 +248,6 @@ def fetch_page_details(url):
 
 def laske_pisteet(tulos):
     pisteet = 0
-
     if tulos["linkki_toimii"]:
         pisteet += 1
     if tulos["yhteystiedot_loytyi_automaattisesti"]:
@@ -279,17 +266,14 @@ def laske_pisteet(tulos):
         pisteet += 1
     if tulos["sinisten_laatikoiden_maara"] >= 3:
         pisteet += 1
-
     return pisteet
 
 
 def paata_tila(tulos):
     if not tulos["linkki_toimii"]:
         return "Virhe"
-
     if tulos["pisteet"] >= 7:
         return "OK"
-
     return "Puutteellinen"
 
 
@@ -397,7 +381,6 @@ def tarkista_osasto(url_polku):
 
 def rakenna_leaderboard(raportti, name_col):
     leaderboard = raportti.copy()
-
     leaderboard["sijoitusperuste"] = list(
         zip(
             -leaderboard["pisteet"],
@@ -410,17 +393,78 @@ def rakenna_leaderboard(raportti, name_col):
             leaderboard[name_col].astype(str),
         )
     )
-
     leaderboard = leaderboard.sort_values("sijoitusperuste").drop(columns=["sijoitusperuste"])
     leaderboard.insert(0, "sijoitus", range(1, len(leaderboard) + 1))
     leaderboard["score_text"] = leaderboard["pisteet"].astype(str) + "/9"
+    return leaderboard
 
-    cols = [
-        "sijoitus",
-        name_col,
-        "score_text",
-        "pisteet",
+
+def build_summary(raportti, leaderboard, name_col, district_col):
+    total = len(raportti)
+    rikki = int((raportti["tila"] == "Virhe").sum())
+    puutteellinen = int((raportti["tila"] == "Puutteellinen").sum())
+    ok = int((raportti["tila"] == "OK").sum())
+
+    vanhentuneet = int((
+        pd.to_numeric(raportti["etusivun_paivitys_ika_paivina"], errors="coerce") > 365
+    ).sum())
+
+    puuttuu_yhteystiedot = int((~raportti["yhteystiedot_loytyi_automaattisesti"]).sum())
+    puuttuu_uutiset = int((~raportti["uutisia_loytyi_automaattisesti"]).sum())
+
+    top5 = leaderboard.head(5)[[name_col, "score_text", "tila"]].to_dict(orient="records")
+    bottom5 = leaderboard.tail(5).iloc[::-1][[name_col, "score_text", "tila"]].to_dict(orient="records")
+
+    district_summary = (
+        raportti.groupby(district_col, dropna=False)
+        .agg(
+            osastoja=("tila", "size"),
+            ok=("tila", lambda s: int((s == "OK").sum())),
+            puutteellinen=("tila", lambda s: int((s == "Puutteellinen").sum())),
+            rikki=("tila", lambda s: int((s == "Virhe").sum())),
+            keskipisteet=("pisteet", "mean"),
+        )
+        .reset_index()
+        .fillna("")
+    )
+    district_summary["keskipisteet"] = district_summary["keskipisteet"].round(2)
+
+    return {
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "totals": {
+            "tarkistettu": total,
+            "rikki": rikki,
+            "puutteellinen": puutteellinen,
+            "ok": ok,
+            "vanhentuneet": vanhentuneet,
+            "puuttuu_yhteystiedot": puuttuu_yhteystiedot,
+            "puuttuu_uutiset": puuttuu_uutiset,
+        },
+        "highlights": [
+            "Tekninen toimivuus on pääosin hyvä, mutta sisältöjen ajantasaisuudessa ja aktiivisuudessa on eroja.",
+            "Piirit kannattaa käyttää pääsuodattimena, jotta ongelmat näkyvät vastuualoittain.",
+        ],
+        "top5": top5,
+        "bottom5": bottom5,
+        "districts": district_summary.to_dict(orient="records"),
+    }
+
+
+def write_dashboard_files(raportti, leaderboard, summary, district_col):
+    dashboard_dir = Path("dashboard")
+    dashboard_dir.mkdir(exist_ok=True)
+
+    export_cols = [
+        district_col,
+        "Osaston nimi",
+        "osasto_url",
         "tila",
+        "pisteet",
+        "Score",
+        "linkki_toimii",
+        "yhteystiedot_loytyi_automaattisesti",
+        "uutisia_loytyi_automaattisesti",
+        "toimintoja_loytyi_automaattisesti",
         "uutisten_lukumaara",
         "sinisten_laatikoiden_maara",
         "etusivun_viimeisin_paivitys",
@@ -429,19 +473,27 @@ def rakenna_leaderboard(raportti, name_col):
         "uutissivun_paivitys_ika_paivina",
         "yhteystietosivun_viimeisin_paivitys",
         "yhteystietosivun_paivitys_ika_paivina",
-        "linkki_toimii",
-        "yhteystiedot_loytyi_automaattisesti",
-        "uutisia_loytyi_automaattisesti",
-        "toimintoja_loytyi_automaattisesti",
         "sisalto_vaikuttaa_vanhalta",
-        "osasto_url",
-        "uutissivu_url",
-        "yhteystietosivu_url",
         "virhe",
     ]
+    export_cols = [c for c in export_cols if c in raportti.columns]
 
-    existing_cols = [c for c in cols if c in leaderboard.columns]
-    return leaderboard[existing_cols]
+    raportti[export_cols].to_json(
+        dashboard_dir / "data.json",
+        orient="records",
+        force_ascii=False,
+        indent=2,
+    )
+
+    leaderboard.head(50).to_json(
+        dashboard_dir / "leaderboard.json",
+        orient="records",
+        force_ascii=False,
+        indent=2,
+    )
+
+    with open(dashboard_dir / "summary.json", "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
 
 
 def main():
@@ -452,26 +504,20 @@ def main():
 
     name_col = find_first_existing_column(
         df,
-        [
-            "Osaston nimi",
-            "Avdelning",
-            "Avdelningens namn",
-            "Branch Name",
-            "Department Name",
-            "Bransh Name",
-        ],
+        ["Osaston nimi", "Avdelning", "Avdelningens namn", "Branch Name", "Department Name", "Bransh Name"],
     )
-
     path_col = find_first_existing_column(
         df,
-        [
-            "Markkinointiosoite",
-            "Avdelning URL",
-            "Branch URL",
-            "Department URL",
-            "Bransh URL",
-        ],
+        ["Markkinointiosoite", "Avdelning URL", "Branch URL", "Department URL", "Bransh URL"],
     )
+    district_col = find_first_existing_column(
+        df,
+        ["Piiri", "Distrikt", "District"],
+    )
+
+    # Jos nimeksi ei tule Osaston nimi, kopioidaan yhteen yhtenäiseen sarakkeeseen dashboardia varten
+    if "Osaston nimi" not in df.columns:
+        df["Osaston nimi"] = df[name_col]
 
     tarkistettavat = df.dropna(subset=[path_col]).copy()
     print(f"Tarkistettavia rivejä: {len(tarkistettavat)}")
@@ -480,13 +526,8 @@ def main():
 
     for _, rivi in tarkistettavat.iterrows():
         nimi = str(rivi[name_col]).strip()
-        alkuperainen_polku = rivi[path_col]
-        kaytettava_polku = siisti_polku(alkuperainen_polku)
-
         print(f"Tarkistetaan: {nimi}")
-        print(f"  Polku: {kaytettava_polku}")
-
-        tarkistus = tarkista_osasto(alkuperainen_polku)
+        tarkistus = tarkista_osasto(rivi[path_col])
 
         yhdistetty = rivi.to_dict()
         for k, v in tarkistus.items():
@@ -494,18 +535,14 @@ def main():
 
         yhdistetty["pisteet"] = laske_pisteet(yhdistetty)
         yhdistetty["tila"] = paata_tila(yhdistetty)
-
+        yhdistetty["Score"] = f'{yhdistetty["pisteet"]}/9'
         yhdistetty["Auto: Linkki toimii"] = bool_to_k_e(yhdistetty["linkki_toimii"])
         yhdistetty["Auto: Yhteystiedot OK"] = bool_to_k_e(yhdistetty["yhteystiedot_loytyi_automaattisesti"])
         yhdistetty["Auto: Ajankohtaisia uutisia"] = bool_to_k_e(yhdistetty["uutisia_loytyi_automaattisesti"])
         yhdistetty["Auto: Toimintoja sivulla"] = bool_to_k_e(yhdistetty["toimintoja_loytyi_automaattisesti"])
-        yhdistetty["Auto: Etusivun päivitys löytyi"] = bool_to_k_e(yhdistetty["etusivun_paivitys_loytyi"])
-        yhdistetty["Auto: Uutissivun päivitys löytyi"] = bool_to_k_e(yhdistetty["uutissivun_paivitys_loytyi"])
-        yhdistetty["Auto: Yhteystietosivun päivitys löytyi"] = bool_to_k_e(yhdistetty["yhteystietosivun_paivitys_loytyi"])
-        yhdistetty["Score"] = f'{yhdistetty["pisteet"]}/9'
 
         tulokset.append(yhdistetty)
-        time.sleep(0.5)
+        time.sleep(0.3)
 
     raportti = pd.DataFrame(tulokset)
 
@@ -523,7 +560,9 @@ def main():
         )
     ].copy()
 
-    leaderboard = rakenna_leaderboard(raportti, name_col)
+    leaderboard = rakenna_leaderboard(raportti, "Osaston nimi")
+    summary = build_summary(raportti, leaderboard, "Osaston nimi", district_col)
+    write_dashboard_files(raportti, leaderboard, summary, district_col)
 
     tiedostonimi = f"osasto_tarkistus_{datetime.now().strftime('%Y%m%d')}.xlsx"
 
