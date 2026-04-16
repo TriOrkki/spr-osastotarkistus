@@ -20,6 +20,10 @@
     .ok { background: #e8f5e9; }
     .warn { background: #fff8e1; }
     .err { background: #ffebee; }
+    .gold { background: #fff3cd; }
+    .silver { background: #eceff1; }
+    .bronze { background: #f3e5d8; }
+    .dev { background: #f5f5f5; }
     @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -31,6 +35,39 @@
 
   <h2>Tärkeimmät havainnot</h2>
   <ul id="highlights"></ul>
+
+  <div class="row">
+    <div>
+      <h2>Top 5</h2>
+      <ul id="top5"></ul>
+    </div>
+    <div>
+      <h2>Bottom 5</h2>
+      <ul id="bottom5"></ul>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <h2>Piirit yhteensä</h2>
+      <table id="districtTable"></table>
+    </div>
+    <div>
+      <h2>Medal-jakauma tällä ajolla</h2>
+      <table id="medalTable"></table>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <h2>Eniten parantuneet viime ajosta</h2>
+      <table id="changesTable"></table>
+    </div>
+    <div>
+      <h2>Piirien trendi ajassa</h2>
+      <table id="trendTable"></table>
+    </div>
+  </div>
 
   <div style="margin: 20px 0;">
     <label for="districtFilter">Piiri:</label>
@@ -44,26 +81,17 @@
       <option value="Virhe">Virhe</option>
     </select>
 
+    <label for="medalFilter">Medal:</label>
+    <select id="medalFilter">
+      <option value="">Kaikki</option>
+      <option value="Kulta">Kulta</option>
+      <option value="Hopea">Hopea</option>
+      <option value="Pronssi">Pronssi</option>
+      <option value="Kehitettävä">Kehitettävä</option>
+    </select>
+
     <label for="searchBox">Haku:</label>
     <input id="searchBox" placeholder="Osaston nimi..." />
-  </div>
-
-  <div class="row">
-    <div>
-      <h2>Piirit yhteensä</h2>
-      <table id="districtTable"></table>
-    </div>
-    <div>
-      <h2>Top 5 / Bottom 5</h2>
-      <div class="card">
-        <strong>Top 5</strong>
-        <ul id="top5"></ul>
-      </div>
-      <div class="card" style="margin-top: 16px;">
-        <strong>Bottom 5</strong>
-        <ul id="bottom5"></ul>
-      </div>
-    </div>
   </div>
 
   <h2>Osastot</h2>
@@ -72,9 +100,12 @@
   <script>
     const districtFilter = document.getElementById('districtFilter');
     const statusFilter = document.getElementById('statusFilter');
+    const medalFilter = document.getElementById('medalFilter');
     const searchBox = document.getElementById('searchBox');
 
     let allRows = [];
+    let summaryData = null;
+    let trendsData = null;
     let districtKey = "Piiri";
 
     function badgeClass(value) {
@@ -83,36 +114,54 @@
       return "badge warn";
     }
 
+    function medalClass(value) {
+      if (value === "Kulta") return "badge gold";
+      if (value === "Hopea") return "badge silver";
+      if (value === "Pronssi") return "badge bronze";
+      return "badge dev";
+    }
+
     function renderTotals(summary) {
       const totals = summary.totals;
+      const medals = countMedals(allRows);
+
       const cards = [
         ["Tarkistettu", totals.tarkistettu],
         ["Rikki", totals.rikki],
         ["Puutteellinen", totals.puutteellinen],
         ["OK", totals.ok],
         ["Vanhentuneet", totals.vanhentuneet],
-        ["Ilman yhteystietoja", totals.puuttuu_yhteystiedot],
-        ["Ilman uutisia", totals.puuttuu_uutiset],
+        ["Kultaa", medals.Kulta],
+        ["Hopeaa", medals.Hopea],
+        ["Pronssia", medals.Pronssi],
       ];
       document.getElementById("totals").innerHTML = cards.map(([label, value]) => `
         <div class="card">
           <div class="muted">${label}</div>
-          <div class="big">${value}</div>
+          <div class="big">${value ?? 0}</div>
         </div>
       `).join("");
     }
 
+    function countMedals(rows) {
+      return rows.reduce((acc, r) => {
+        const m = r.medal || "Kehitettävä";
+        acc[m] = (acc[m] || 0) + 1;
+        return acc;
+      }, {Kulta:0, Hopea:0, Pronssi:0, Kehitettävä:0});
+    }
+
     function renderHighlights(summary) {
-      document.getElementById("highlights").innerHTML = summary.highlights
-        .map(x => `<li>${x}</li>`).join("");
+      document.getElementById("highlights").innerHTML = summary.highlights.map(x => `<li>${x}</li>`).join("");
       document.getElementById("meta").textContent = `Päivitetty: ${summary.generated_at}`;
     }
 
     function renderTopBottom(summary) {
       document.getElementById("top5").innerHTML = summary.top5
-        .map(x => `<li>${x["Osaston nimi"] ?? x["Avdelning"] ?? ""} (${x.score_text}, ${x.tila})</li>`).join("");
+        .map(x => `<li>${x["Osaston nimi"]} (${x.score_text}, <span class="${medalClass(x.medal)}">${x.medal}</span>)</li>`).join("");
+
       document.getElementById("bottom5").innerHTML = summary.bottom5
-        .map(x => `<li>${x["Osaston nimi"] ?? x["Avdelning"] ?? ""} (${x.score_text}, ${x.tila})</li>`).join("");
+        .map(x => `<li>${x["Osaston nimi"]} (${x.score_text}, <span class="${medalClass(x.medal)}">${x.medal}</span>)</li>`).join("");
     }
 
     function renderDistricts(summary) {
@@ -131,6 +180,9 @@
           <th>Puutteellinen</th>
           <th>Rikki</th>
           <th>Keskipisteet</th>
+          <th>Kultaa</th>
+          <th>Hopeaa</th>
+          <th>Pronssia</th>
         </tr>
         ${rows.map(r => `
           <tr>
@@ -140,6 +192,56 @@
             <td>${r.puutteellinen}</td>
             <td>${r.rikki}</td>
             <td>${r.keskipisteet}</td>
+            <td>${r.kultaa}</td>
+            <td>${r.hopeaa}</td>
+            <td>${r.pronssia}</td>
+          </tr>
+        `).join("")}
+      `;
+    }
+
+    function renderMedals(rows) {
+      const medals = countMedals(rows);
+      document.getElementById("medalTable").innerHTML = `
+        <tr><th>Medal</th><th>Määrä</th></tr>
+        <tr><td><span class="${medalClass("Kulta")}">Kulta</span></td><td>${medals.Kulta}</td></tr>
+        <tr><td><span class="${medalClass("Hopea")}">Hopea</span></td><td>${medals.Hopea}</td></tr>
+        <tr><td><span class="${medalClass("Pronssi")}">Pronssi</span></td><td>${medals.Pronssi}</td></tr>
+        <tr><td><span class="${medalClass("Kehitettävä")}">Kehitettävä</span></td><td>${medals["Kehitettävä"]}</td></tr>
+      `;
+    }
+
+    function renderChanges(trends) {
+      const rows = (trends.latest_changes || []).slice(0, 10);
+      document.getElementById("changesTable").innerHTML = `
+        <tr><th>Osasto</th><th>Piiri</th><th>Nyt</th><th>Muutos</th><th>Medal</th></tr>
+        ${rows.map(r => `
+          <tr>
+            <td>${r.osasto}</td>
+            <td>${r.piiri ?? ""}</td>
+            <td>${r.curr_pisteet}</td>
+            <td>${r.delta > 0 ? "+" : ""}${r.delta ?? ""}</td>
+            <td><span class="${medalClass(r.medal)}">${r.medal ?? ""}</span></td>
+          </tr>
+        `).join("")}
+      `;
+    }
+
+    function renderTrends(trends) {
+      const districtTrends = trends.district_trends || [];
+      const latestDate = districtTrends.map(r => r.run_date).sort().slice(-1)[0];
+      const rows = districtTrends.filter(r => r.run_date === latestDate);
+
+      document.getElementById("trendTable").innerHTML = `
+        <tr><th>Piiri</th><th>Päivä</th><th>Keskipisteet</th><th>Kultaa</th><th>Hopeaa</th><th>Pronssia</th></tr>
+        ${rows.map(r => `
+          <tr>
+            <td>${r.piiri}</td>
+            <td>${r.run_date}</td>
+            <td>${r.keskipisteet}</td>
+            <td>${r.kultaa}</td>
+            <td>${r.hopeaa}</td>
+            <td>${r.pronssia}</td>
           </tr>
         `).join("")}
       `;
@@ -147,7 +249,7 @@
 
     function renderDataTable(rows) {
       const cols = [
-        districtKey, "Osaston nimi", "tila", "Score", "uutisten_lukumaara",
+        districtKey, "Osaston nimi", "tila", "Score", "medal", "uutisten_lukumaara",
         "sinisten_laatikoiden_maara", "etusivun_paivitys_ika_paivina", "osasto_url"
       ].filter(c => rows[0] && c in rows[0]);
 
@@ -157,6 +259,7 @@
           <tr>
             ${cols.map(c => {
               if (c === "tila") return `<td><span class="${badgeClass(r[c])}">${r[c]}</span></td>`;
+              if (c === "medal") return `<td><span class="${medalClass(r[c])}">${r[c]}</span></td>`;
               if (c === "osasto_url") return `<td><a href="${r[c]}" target="_blank">Avaa</a></td>`;
               return `<td>${r[c] ?? ""}</td>`;
             }).join("")}
@@ -168,14 +271,16 @@
     function applyFilters() {
       const district = districtFilter.value;
       const status = statusFilter.value;
+      const medal = medalFilter.value;
       const q = searchBox.value.toLowerCase().trim();
 
       const filtered = allRows.filter(r => {
         const districtOk = !district || String(r[districtKey]) === district;
         const statusOk = !status || r.tila === status;
+        const medalOk = !medal || r.medal === medal;
         const name = String(r["Osaston nimi"] ?? "").toLowerCase();
         const searchOk = !q || name.includes(q);
-        return districtOk && statusOk && searchOk;
+        return districtOk && statusOk && medalOk && searchOk;
       });
 
       renderDataTable(filtered);
@@ -184,16 +289,24 @@
     Promise.all([
       fetch("./summary.json").then(r => r.json()),
       fetch("./data.json").then(r => r.json()),
-    ]).then(([summary, data]) => {
+      fetch("./trends.json").then(r => r.json()),
+    ]).then(([summary, data, trends]) => {
+      summaryData = summary;
       allRows = data;
+      trendsData = trends;
+
       renderTotals(summary);
       renderHighlights(summary);
       renderTopBottom(summary);
       renderDistricts(summary);
+      renderMedals(data);
+      renderChanges(trends);
+      renderTrends(trends);
       renderDataTable(data);
 
       districtFilter.addEventListener("change", applyFilters);
       statusFilter.addEventListener("change", applyFilters);
+      medalFilter.addEventListener("change", applyFilters);
       searchBox.addEventListener("input", applyFilters);
     });
   </script>
