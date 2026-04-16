@@ -62,6 +62,16 @@ def bool_to_k_e(value):
     return "K" if value else "E"
 
 
+def medal_from_score(score):
+    if score >= 8:
+        return "Kulta"
+    if score >= 6:
+        return "Hopea"
+    if score >= 4:
+        return "Pronssi"
+    return "Kehitettävä"
+
+
 def parse_date_string(text):
     text = text.strip()
     formats = ["%d.%m.%Y", "%Y-%m-%d", "%d/%m/%Y"]
@@ -92,23 +102,19 @@ def extract_meta_modified_date(soup):
         ("name", "modified"),
         ("name", "date"),
     ]
-
     for attr_name, attr_value in meta_candidates:
         tag = soup.find("meta", attrs={attr_name: attr_value})
         if tag and tag.get("content"):
             content = tag["content"].strip()
-
             try:
                 return datetime.fromisoformat(content.replace("Z", "+00:00")).date()
             except ValueError:
                 pass
-
             for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S%z"):
                 try:
                     return datetime.strptime(content, fmt).date()
                 except ValueError:
                     pass
-
     return None
 
 
@@ -117,10 +123,8 @@ def extract_latest_date(soup):
     meta_date = extract_meta_modified_date(soup)
     text_dates = extract_dates_from_text(text)
     latest_text_date = max(text_dates) if text_dates else None
-
     if meta_date and latest_text_date:
         return max(meta_date, latest_text_date)
-
     return meta_date or latest_text_date
 
 
@@ -360,7 +364,6 @@ def tarkista_osasto(url_polku):
 
     uutissivu_url = find_first_matching_link(soup, url, NEWS_HINTS)
     tulos["uutissivu_url"] = uutissivu_url
-
     if uutissivu_url:
         news_info = fetch_page_details(uutissivu_url)
         tulos["uutissivun_viimeisin_paivitys"] = news_info["latest_date"]
@@ -369,7 +372,6 @@ def tarkista_osasto(url_polku):
 
     yhteystietosivu_url = find_first_matching_link(soup, url, CONTACT_HINTS)
     tulos["yhteystietosivu_url"] = yhteystietosivu_url
-
     if yhteystietosivu_url:
         contact_info = fetch_page_details(yhteystietosivu_url)
         tulos["yhteystietosivun_viimeisin_paivitys"] = contact_info["latest_date"]
@@ -379,7 +381,7 @@ def tarkista_osasto(url_polku):
     return tulos
 
 
-def rakenna_leaderboard(raportti, name_col):
+def rakenna_leaderboard(raportti):
     leaderboard = raportti.copy()
     leaderboard["sijoitusperuste"] = list(
         zip(
@@ -390,7 +392,7 @@ def rakenna_leaderboard(raportti, name_col):
             -leaderboard["etusivun_paivitys_loytyi"].astype(int),
             -leaderboard["uutissivun_paivitys_loytyi"].astype(int),
             -leaderboard["yhteystietosivun_paivitys_loytyi"].astype(int),
-            leaderboard[name_col].astype(str),
+            leaderboard["Osaston nimi"].astype(str),
         )
     )
     leaderboard = leaderboard.sort_values("sijoitusperuste").drop(columns=["sijoitusperuste"])
@@ -399,21 +401,54 @@ def rakenna_leaderboard(raportti, name_col):
     return leaderboard
 
 
-def build_summary(raportti, leaderboard, name_col, district_col):
+def update_history(raportti, district_col):
+    dashboard_dir = Path("dashboard")
+    dashboard_dir.mkdir(exist_ok=True)
+    history_path = dashboard_dir / "history.json"
+
+    run_date = datetime.utcnow().strftime("%Y-%m-%d")
+
+    history_rows = []
+    for _, row in raportti.iterrows():
+        history_rows.append({
+            "run_date": run_date,
+            "piiri": row.get(district_col, ""),
+            "osasto": row.get("Osaston nimi", ""),
+            "pisteet": int(row.get("pisteet", 0)),
+            "tila": row.get("tila", ""),
+            "medal": row.get("medal", ""),
+            "uutisten_lukumaara": int(row.get("uutisten_lukumaara", 0)),
+            "sinisten_laatikoiden_maara": int(row.get("sinisten_laatikoiden_maara", 0)),
+            "etusivun_paivitys_ika_paivina": row.get("etusivun_paivitys_ika_paivina", ""),
+            "linkki_toimii": bool(row.get("linkki_toimii", False)),
+        })
+
+    existing = []
+    if history_path.exists():
+        try:
+            existing = json.loads(history_path.read_text(encoding="utf-8"))
+        except Exception:
+            existing = []
+
+    # Poista saman päivän duplikaatit ennen uuden snapshotin lisäämistä
+    existing = [
+        r for r in existing
+        if not (r.get("run_date") == run_date and r.get("osasto") in set(raportti["Osaston nimi"].astype(str)))
+    ]
+
+    combined = existing + history_rows
+    history_path.write_text(json.dumps(combined, ensure_ascii=False, indent=2), encoding="utf-8")
+    return combined
+
+
+def build_summary(raportti, leaderboard, district_col):
     total = len(raportti)
     rikki = int((raportti["tila"] == "Virhe").sum())
     puutteellinen = int((raportti["tila"] == "Puutteellinen").sum())
     ok = int((raportti["tila"] == "OK").sum())
-
-    vanhentuneet = int((
-        pd.to_numeric(raportti["etusivun_paivitys_ika_paivina"], errors="coerce") > 365
-    ).sum())
-
+    vanhentuneet = int((pd.to_numeric(raportti["etusivun_paivitys_ika_paivina"], errors="coerce") > 365).sum())
     puuttuu_yhteystiedot = int((~raportti["yhteystiedot_loytyi_automaattisesti"]).sum())
     puuttuu_uutiset = int((~raportti["uutisia_loytyi_automaattisesti"]).sum())
-
-    top5 = leaderboard.head(5)[[name_col, "score_text", "tila"]].to_dict(orient="records")
-    bottom5 = leaderboard.tail(5).iloc[::-1][[name_col, "score_text", "tila"]].to_dict(orient="records")
 
     district_summary = (
         raportti.groupby(district_col, dropna=False)
@@ -423,6 +458,9 @@ def build_summary(raportti, leaderboard, name_col, district_col):
             puutteellinen=("tila", lambda s: int((s == "Puutteellinen").sum())),
             rikki=("tila", lambda s: int((s == "Virhe").sum())),
             keskipisteet=("pisteet", "mean"),
+            kultaa=("medal", lambda s: int((s == "Kulta").sum())),
+            hopeaa=("medal", lambda s: int((s == "Hopea").sum())),
+            pronssia=("medal", lambda s: int((s == "Pronssi").sum())),
         )
         .reset_index()
         .fillna("")
@@ -442,15 +480,69 @@ def build_summary(raportti, leaderboard, name_col, district_col):
         },
         "highlights": [
             "Tekninen toimivuus on pääosin hyvä, mutta sisältöjen ajantasaisuudessa ja aktiivisuudessa on eroja.",
-            "Piirit kannattaa käyttää pääsuodattimena, jotta ongelmat näkyvät vastuualoittain.",
+            "Medal-luokitus auttaa näkemään nopeasti, mitkä osastot ansaitsevat kehuja ja missä tarvitaan tukea.",
         ],
-        "top5": top5,
-        "bottom5": bottom5,
+        "top5": leaderboard.head(5)[["Osaston nimi", "score_text", "tila", "medal"]].to_dict(orient="records"),
+        "bottom5": leaderboard.tail(5).iloc[::-1][["Osaston nimi", "score_text", "tila", "medal"]].to_dict(orient="records"),
         "districts": district_summary.to_dict(orient="records"),
     }
 
 
-def write_dashboard_files(raportti, leaderboard, summary, district_col):
+def build_trends(history_rows):
+    if not history_rows:
+        return {"district_trends": [], "osasto_trends": [], "medal_history": [], "latest_changes": []}
+
+    hist = pd.DataFrame(history_rows)
+
+    district_trends = (
+        hist.groupby(["run_date", "piiri"], dropna=False)
+        .agg(
+            keskipisteet=("pisteet", "mean"),
+            osastoja=("osasto", "size"),
+            kultaa=("medal", lambda s: int((s == "Kulta").sum())),
+            hopeaa=("medal", lambda s: int((s == "Hopea").sum())),
+            pronssia=("medal", lambda s: int((s == "Pronssi").sum())),
+        )
+        .reset_index()
+    )
+    district_trends["keskipisteet"] = district_trends["keskipisteet"].round(2)
+
+    osasto_trends = (
+        hist.sort_values(["osasto", "run_date"])
+        .groupby("osasto", dropna=False)
+        .tail(12)
+        .reset_index(drop=True)
+    )
+
+    medal_history = (
+        hist.groupby(["run_date", "medal"], dropna=False)
+        .size()
+        .reset_index(name="count")
+    )
+
+    latest_dates = sorted(hist["run_date"].dropna().unique())
+    latest_changes = []
+
+    if len(latest_dates) >= 2:
+        prev_date = latest_dates[-2]
+        curr_date = latest_dates[-1]
+
+        prev_df = hist[hist["run_date"] == prev_date][["osasto", "pisteet"]].rename(columns={"pisteet": "prev_pisteet"})
+        curr_df = hist[hist["run_date"] == curr_date][["osasto", "pisteet", "medal", "piiri"]].rename(columns={"pisteet": "curr_pisteet"})
+
+        merged = curr_df.merge(prev_df, on="osasto", how="left")
+        merged["delta"] = merged["curr_pisteet"] - merged["prev_pisteet"].fillna(0)
+        latest_changes = merged.sort_values("delta", ascending=False).to_dict(orient="records")
+
+    return {
+        "district_trends": district_trends.to_dict(orient="records"),
+        "osasto_trends": osasto_trends.to_dict(orient="records"),
+        "medal_history": medal_history.to_dict(orient="records"),
+        "latest_changes": latest_changes,
+    }
+
+
+def write_dashboard_files(raportti, leaderboard, summary, trends, district_col):
     dashboard_dir = Path("dashboard")
     dashboard_dir.mkdir(exist_ok=True)
 
@@ -461,18 +553,16 @@ def write_dashboard_files(raportti, leaderboard, summary, district_col):
         "tila",
         "pisteet",
         "Score",
+        "medal",
+        "uutisten_lukumaara",
+        "sinisten_laatikoiden_maara",
+        "etusivun_paivitys_ika_paivina",
+        "uutissivun_paivitys_ika_paivina",
+        "yhteystietosivun_paivitys_ika_paivina",
         "linkki_toimii",
         "yhteystiedot_loytyi_automaattisesti",
         "uutisia_loytyi_automaattisesti",
         "toimintoja_loytyi_automaattisesti",
-        "uutisten_lukumaara",
-        "sinisten_laatikoiden_maara",
-        "etusivun_viimeisin_paivitys",
-        "etusivun_paivitys_ika_paivina",
-        "uutissivun_viimeisin_paivitys",
-        "uutissivun_paivitys_ika_paivina",
-        "yhteystietosivun_viimeisin_paivitys",
-        "yhteystietosivun_paivitys_ika_paivina",
         "sisalto_vaikuttaa_vanhalta",
         "virhe",
     ]
@@ -485,7 +575,7 @@ def write_dashboard_files(raportti, leaderboard, summary, district_col):
         indent=2,
     )
 
-    leaderboard.head(50).to_json(
+    leaderboard.head(100).to_json(
         dashboard_dir / "leaderboard.json",
         orient="records",
         force_ascii=False,
@@ -494,6 +584,9 @@ def write_dashboard_files(raportti, leaderboard, summary, district_col):
 
     with open(dashboard_dir / "summary.json", "w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
+
+    with open(dashboard_dir / "trends.json", "w", encoding="utf-8") as f:
+        json.dump(trends, f, ensure_ascii=False, indent=2)
 
 
 def main():
@@ -515,7 +608,6 @@ def main():
         ["Piiri", "Distrikt", "District"],
     )
 
-    # Jos nimeksi ei tule Osaston nimi, kopioidaan yhteen yhtenäiseen sarakkeeseen dashboardia varten
     if "Osaston nimi" not in df.columns:
         df["Osaston nimi"] = df[name_col]
 
@@ -527,15 +619,18 @@ def main():
     for _, rivi in tarkistettavat.iterrows():
         nimi = str(rivi[name_col]).strip()
         print(f"Tarkistetaan: {nimi}")
-        tarkistus = tarkista_osasto(rivi[path_col])
 
+        tarkistus = tarkista_osasto(rivi[path_col])
         yhdistetty = rivi.to_dict()
+
         for k, v in tarkistus.items():
             yhdistetty[k] = v
 
         yhdistetty["pisteet"] = laske_pisteet(yhdistetty)
         yhdistetty["tila"] = paata_tila(yhdistetty)
+        yhdistetty["medal"] = medal_from_score(yhdistetty["pisteet"])
         yhdistetty["Score"] = f'{yhdistetty["pisteet"]}/9'
+
         yhdistetty["Auto: Linkki toimii"] = bool_to_k_e(yhdistetty["linkki_toimii"])
         yhdistetty["Auto: Yhteystiedot OK"] = bool_to_k_e(yhdistetty["yhteystiedot_loytyi_automaattisesti"])
         yhdistetty["Auto: Ajankohtaisia uutisia"] = bool_to_k_e(yhdistetty["uutisia_loytyi_automaattisesti"])
@@ -560,9 +655,11 @@ def main():
         )
     ].copy()
 
-    leaderboard = rakenna_leaderboard(raportti, "Osaston nimi")
-    summary = build_summary(raportti, leaderboard, "Osaston nimi", district_col)
-    write_dashboard_files(raportti, leaderboard, summary, district_col)
+    leaderboard = rakenna_leaderboard(raportti)
+    history_rows = update_history(raportti, district_col)
+    summary = build_summary(raportti, leaderboard, district_col)
+    trends = build_trends(history_rows)
+    write_dashboard_files(raportti, leaderboard, summary, trends, district_col)
 
     tiedostonimi = f"osasto_tarkistus_{datetime.now().strftime('%Y%m%d')}.xlsx"
 
