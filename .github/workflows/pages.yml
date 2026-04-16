@@ -6,12 +6,12 @@ on:
     - cron: "0 6 1 * *"
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: true
 
 jobs:
@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -62,7 +64,16 @@ jobs:
           PY
 
       - name: Show summary in Actions
-        run: cat summary.md >> $GITHUB_STEP_SUMMARY
+        run: cat summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit updated dashboard data
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dashboard/data.json dashboard/summary.json dashboard/trends.json dashboard/history.json
+          git diff --cached --quiet && echo "No dashboard changes to commit" || git commit -m "Update dashboard data"
+          git push
 
       - name: Upload Excel artifact
         uses: actions/upload-artifact@v7
@@ -71,6 +82,9 @@ jobs:
           path: |
             *.xlsx
             summary.md
+
+      - name: Add .nojekyll
+        run: touch dashboard/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
