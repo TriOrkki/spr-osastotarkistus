@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-04-16T13:48:21.091229Z",
+  "generated_at": "2026-05-01T08:22:27.601975Z",
   "totals": {
     "tarkistettu": 385,
-    "rikki": 2,
-    "puutteellinen": 165,
-    "ok": 218,
+    "rikki": 1,
+    "puutteellinen": 164,
+    "ok": 220,
     "vanhentuneet": 8,
-    "puuttuu_yhteystiedot": 11,
-    "puuttuu_uutiset": 2
+    "puuttuu_yhteystiedot": 9,
+    "puuttuu_uutiset": 1
   },
   "highlights": [
     "Tekninen toimivuus on pääosin hyvä, mutta sisältöjen ajantasaisuudessa ja aktiivisuudessa on eroja.",
@@ -53,12 +53,6 @@
       "medal": "Kehitettävä"
     },
     {
-      "Osaston nimi": "FRK Dragsfjärd avdelning",
-      "score_text": "0/9",
-      "tila": "Virhe",
-      "medal": "Kehitettävä"
-    },
-    {
       "Osaston nimi": "FRK Lappträsk avdelning",
       "score_text": "3/9",
       "tila": "Puutteellinen",
@@ -72,6 +66,12 @@
     },
     {
       "Osaston nimi": "SPR Taipalsaaren osasto",
+      "score_text": "4/9",
+      "tila": "Puutteellinen",
+      "medal": "Pronssi"
+    },
+    {
+      "Osaston nimi": "SPR Kärsämäen osasto",
       "score_text": "4/9",
       "tila": "Puutteellinen",
       "medal": "Pronssi"
@@ -92,10 +92,10 @@
     {
       "Piiri": "Hämeen piiri",
       "osastoja": 47,
-      "ok": 35,
-      "puutteellinen": 12,
+      "ok": 37,
+      "puutteellinen": 10,
       "rikki": 0,
-      "keskipisteet": 6.72,
+      "keskipisteet": 6.77,
       "kultaa": 0,
       "hopeaa": 46,
       "pronssia": 1
@@ -117,10 +117,10 @@
       "ok": 11,
       "puutteellinen": 8,
       "rikki": 0,
-      "keskipisteet": 6.47,
+      "keskipisteet": 6.42,
       "kultaa": 0,
-      "hopeaa": 17,
-      "pronssia": 2
+      "hopeaa": 16,
+      "pronssia": 3
     },
     {
       "Piiri": "Länsi-Suomen piiri",
@@ -169,23 +169,23 @@
     {
       "Piiri": "Varsinais-Suomen piiri",
       "osastoja": 36,
-      "ok": 24,
-      "puutteellinen": 12,
+      "ok": 23,
+      "puutteellinen": 13,
       "rikki": 0,
       "keskipisteet": 6.5,
       "kultaa": 0,
-      "hopeaa": 31,
-      "pronssia": 5
+      "hopeaa": 32,
+      "pronssia": 4
     },
     {
       "Piiri": "Åbolands distrikt",
       "osastoja": 10,
-      "ok": 1,
+      "ok": 2,
       "puutteellinen": 8,
-      "rikki": 1,
-      "keskipisteet": 4.8,
+      "rikki": 0,
+      "keskipisteet": 5.5,
       "kultaa": 0,
-      "hopeaa": 2,
+      "hopeaa": 3,
       "pronssia": 7
     },
     {
