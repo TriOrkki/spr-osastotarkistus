@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-05-01T08:22:27.601975Z",
+  "generated_at": "2026-06-01T11:44:31.471491Z",
   "totals": {
     "tarkistettu": 385,
-    "rikki": 1,
-    "puutteellinen": 164,
+    "rikki": 3,
+    "puutteellinen": 162,
     "ok": 220,
     "vanhentuneet": 8,
-    "puuttuu_yhteystiedot": 9,
-    "puuttuu_uutiset": 1
+    "puuttuu_yhteystiedot": 10,
+    "puuttuu_uutiset": 3
   },
   "highlights": [
     "Tekninen toimivuus on pääosin hyvä, mutta sisältöjen ajantasaisuudessa ja aktiivisuudessa on eroja.",
@@ -47,7 +47,19 @@
   ],
   "bottom5": [
     {
+      "Osaston nimi": "SPR Kokkolan ja Pietarsaaren osasto",
+      "score_text": "0/9",
+      "tila": "Virhe",
+      "medal": "Kehitettävä"
+    },
+    {
       "Osaston nimi": "FRK Finström avdelning",
+      "score_text": "0/9",
+      "tila": "Virhe",
+      "medal": "Kehitettävä"
+    },
+    {
+      "Osaston nimi": "FRK Dragsfjärd avdelning",
       "score_text": "0/9",
       "tila": "Virhe",
       "medal": "Kehitettävä"
@@ -63,28 +75,16 @@
       "score_text": "4/9",
       "tila": "Puutteellinen",
       "medal": "Pronssi"
-    },
-    {
-      "Osaston nimi": "SPR Taipalsaaren osasto",
-      "score_text": "4/9",
-      "tila": "Puutteellinen",
-      "medal": "Pronssi"
-    },
-    {
-      "Osaston nimi": "SPR Kärsämäen osasto",
-      "score_text": "4/9",
-      "tila": "Puutteellinen",
-      "medal": "Pronssi"
     }
   ],
   "districts": [
     {
       "Piiri": "Helsingin ja Uudenmaan piiri",
       "osastoja": 43,
-      "ok": 27,
-      "puutteellinen": 16,
+      "ok": 28,
+      "puutteellinen": 15,
       "rikki": 0,
-      "keskipisteet": 6.44,
+      "keskipisteet": 6.49,
       "kultaa": 0,
       "hopeaa": 38,
       "pronssia": 4
@@ -92,24 +92,24 @@
     {
       "Piiri": "Hämeen piiri",
       "osastoja": 47,
-      "ok": 37,
-      "puutteellinen": 10,
+      "ok": 36,
+      "puutteellinen": 11,
       "rikki": 0,
-      "keskipisteet": 6.77,
+      "keskipisteet": 6.72,
       "kultaa": 0,
-      "hopeaa": 46,
-      "pronssia": 1
+      "hopeaa": 45,
+      "pronssia": 2
     },
     {
       "Piiri": "Kaakkois-Suomen piiri",
       "osastoja": 32,
-      "ok": 19,
-      "puutteellinen": 13,
+      "ok": 20,
+      "puutteellinen": 12,
       "rikki": 0,
-      "keskipisteet": 6.44,
+      "keskipisteet": 6.5,
       "kultaa": 0,
-      "hopeaa": 28,
-      "pronssia": 4
+      "hopeaa": 29,
+      "pronssia": 3
     },
     {
       "Piiri": "Lapin piiri",
@@ -126,11 +126,11 @@
       "Piiri": "Länsi-Suomen piiri",
       "osastoja": 51,
       "ok": 27,
-      "puutteellinen": 24,
-      "rikki": 0,
-      "keskipisteet": 6.45,
+      "puutteellinen": 23,
+      "rikki": 1,
+      "keskipisteet": 6.33,
       "kultaa": 0,
-      "hopeaa": 47,
+      "hopeaa": 46,
       "pronssia": 4
     },
     {
@@ -172,20 +172,20 @@
       "ok": 23,
       "puutteellinen": 13,
       "rikki": 0,
-      "keskipisteet": 6.5,
+      "keskipisteet": 6.47,
       "kultaa": 0,
-      "hopeaa": 32,
-      "pronssia": 4
+      "hopeaa": 31,
+      "pronssia": 5
     },
     {
       "Piiri": "Åbolands distrikt",
       "osastoja": 10,
-      "ok": 2,
+      "ok": 1,
       "puutteellinen": 8,
-      "rikki": 0,
-      "keskipisteet": 5.5,
+      "rikki": 1,
+      "keskipisteet": 4.8,
       "kultaa": 0,
-      "hopeaa": 3,
+      "hopeaa": 2,
       "pronssia": 7
     },
     {
@@ -205,10 +205,10 @@
       "ok": 8,
       "puutteellinen": 22,
       "rikki": 0,
-      "keskipisteet": 5.67,
+      "keskipisteet": 5.7,
       "kultaa": 0,
-      "hopeaa": 13,
-      "pronssia": 17
+      "hopeaa": 14,
+      "pronssia": 16
     }
   ]
 }
