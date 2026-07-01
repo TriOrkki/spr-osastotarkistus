@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-06-01T11:44:31.471491Z",
+  "generated_at": "2026-07-01T09:56:43.369503Z",
   "totals": {
     "tarkistettu": 385,
-    "rikki": 3,
+    "rikki": 2,
     "puutteellinen": 162,
-    "ok": 220,
+    "ok": 221,
     "vanhentuneet": 8,
-    "puuttuu_yhteystiedot": 10,
-    "puuttuu_uutiset": 3
+    "puuttuu_yhteystiedot": 9,
+    "puuttuu_uutiset": 2
   },
   "highlights": [
     "Tekninen toimivuus on pääosin hyvä, mutta sisältöjen ajantasaisuudessa ja aktiivisuudessa on eroja.",
@@ -33,13 +33,13 @@
       "medal": "Hopea"
     },
     {
-      "Osaston nimi": "SPR Pohjois- ja Keski-Helsingin osasto",
+      "Osaston nimi": "FRK Vasa svenska avdelning",
       "score_text": "7/9",
       "tila": "OK",
       "medal": "Hopea"
     },
     {
-      "Osaston nimi": "FRK Vasa svenska avdelning",
+      "Osaston nimi": "SPR Säkylän osasto",
       "score_text": "7/9",
       "tila": "OK",
       "medal": "Hopea"
@@ -59,12 +59,6 @@
       "medal": "Kehitettävä"
     },
     {
-      "Osaston nimi": "FRK Dragsfjärd avdelning",
-      "score_text": "0/9",
-      "tila": "Virhe",
-      "medal": "Kehitettävä"
-    },
-    {
       "Osaston nimi": "FRK Lappträsk avdelning",
       "score_text": "3/9",
       "tila": "Puutteellinen",
@@ -72,6 +66,12 @@
     },
     {
       "Osaston nimi": "SPR Ylämyllyn osasto",
+      "score_text": "4/9",
+      "tila": "Puutteellinen",
+      "medal": "Pronssi"
+    },
+    {
+      "Osaston nimi": "SPR Taipalsaaren osasto",
       "score_text": "4/9",
       "tila": "Puutteellinen",
       "medal": "Pronssi"
@@ -92,10 +92,10 @@
     {
       "Piiri": "Hämeen piiri",
       "osastoja": 47,
-      "ok": 36,
-      "puutteellinen": 11,
+      "ok": 37,
+      "puutteellinen": 10,
       "rikki": 0,
-      "keskipisteet": 6.72,
+      "keskipisteet": 6.74,
       "kultaa": 0,
       "hopeaa": 45,
       "pronssia": 2
@@ -125,10 +125,10 @@
     {
       "Piiri": "Länsi-Suomen piiri",
       "osastoja": 51,
-      "ok": 27,
-      "puutteellinen": 23,
+      "ok": 26,
+      "puutteellinen": 24,
       "rikki": 1,
-      "keskipisteet": 6.33,
+      "keskipisteet": 6.31,
       "kultaa": 0,
       "hopeaa": 46,
       "pronssia": 4
@@ -161,18 +161,18 @@
       "ok": 26,
       "puutteellinen": 14,
       "rikki": 0,
-      "keskipisteet": 6.58,
+      "keskipisteet": 6.55,
       "kultaa": 0,
-      "hopeaa": 38,
-      "pronssia": 2
+      "hopeaa": 37,
+      "pronssia": 3
     },
     {
       "Piiri": "Varsinais-Suomen piiri",
       "osastoja": 36,
-      "ok": 23,
-      "puutteellinen": 13,
+      "ok": 22,
+      "puutteellinen": 14,
       "rikki": 0,
-      "keskipisteet": 6.47,
+      "keskipisteet": 6.44,
       "kultaa": 0,
       "hopeaa": 31,
       "pronssia": 5
@@ -180,13 +180,13 @@
     {
       "Piiri": "Åbolands distrikt",
       "osastoja": 10,
-      "ok": 1,
-      "puutteellinen": 8,
-      "rikki": 1,
-      "keskipisteet": 4.8,
+      "ok": 3,
+      "puutteellinen": 7,
+      "rikki": 0,
+      "keskipisteet": 5.7,
       "kultaa": 0,
-      "hopeaa": 2,
-      "pronssia": 7
+      "hopeaa": 4,
+      "pronssia": 6
     },
     {
       "Piiri": "Ålands distrikt",
