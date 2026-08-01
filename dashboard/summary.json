@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-07-01T09:56:43.369503Z",
+  "generated_at": "2026-08-01T08:30:03.002148Z",
   "totals": {
     "tarkistettu": 385,
-    "rikki": 2,
-    "puutteellinen": 162,
-    "ok": 221,
+    "rikki": 3,
+    "puutteellinen": 160,
+    "ok": 222,
     "vanhentuneet": 8,
     "puuttuu_yhteystiedot": 9,
-    "puuttuu_uutiset": 2
+    "puuttuu_uutiset": 3
   },
   "highlights": [
     "Tekninen toimivuus on pääosin hyvä, mutta sisältöjen ajantasaisuudessa ja aktiivisuudessa on eroja.",
@@ -59,6 +59,12 @@
       "medal": "Kehitettävä"
     },
     {
+      "Osaston nimi": "FRK Dragsfjärd avdelning",
+      "score_text": "0/9",
+      "tila": "Virhe",
+      "medal": "Kehitettävä"
+    },
+    {
       "Osaston nimi": "FRK Lappträsk avdelning",
       "score_text": "3/9",
       "tila": "Puutteellinen",
@@ -66,12 +72,6 @@
     },
     {
       "Osaston nimi": "SPR Ylämyllyn osasto",
-      "score_text": "4/9",
-      "tila": "Puutteellinen",
-      "medal": "Pronssi"
-    },
-    {
-      "Osaston nimi": "SPR Taipalsaaren osasto",
       "score_text": "4/9",
       "tila": "Puutteellinen",
       "medal": "Pronssi"
@@ -92,13 +92,13 @@
     {
       "Piiri": "Hämeen piiri",
       "osastoja": 47,
-      "ok": 37,
-      "puutteellinen": 10,
+      "ok": 38,
+      "puutteellinen": 9,
       "rikki": 0,
-      "keskipisteet": 6.74,
+      "keskipisteet": 6.79,
       "kultaa": 0,
-      "hopeaa": 45,
-      "pronssia": 2
+      "hopeaa": 46,
+      "pronssia": 1
     },
     {
       "Piiri": "Kaakkois-Suomen piiri",
@@ -181,11 +181,11 @@
       "Piiri": "Åbolands distrikt",
       "osastoja": 10,
       "ok": 3,
-      "puutteellinen": 7,
-      "rikki": 0,
-      "keskipisteet": 5.7,
+      "puutteellinen": 6,
+      "rikki": 1,
+      "keskipisteet": 5.1,
       "kultaa": 0,
-      "hopeaa": 4,
+      "hopeaa": 3,
       "pronssia": 6
     },
     {
