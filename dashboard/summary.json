@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-09-01T11:20:13.364031Z",
+  "generated_at": "2026-10-01T12:42:40.069812Z",
   "totals": {
     "tarkistettu": 385,
     "rikki": 2,
-    "puutteellinen": 163,
-    "ok": 220,
-    "vanhentuneet": 7,
+    "puutteellinen": 162,
+    "ok": 221,
+    "vanhentuneet": 10,
     "puuttuu_yhteystiedot": 9,
     "puuttuu_uutiset": 2
   },
@@ -92,10 +92,10 @@
     {
       "Piiri": "Hämeen piiri",
       "osastoja": 47,
-      "ok": 38,
-      "puutteellinen": 9,
+      "ok": 39,
+      "puutteellinen": 8,
       "rikki": 0,
-      "keskipisteet": 6.79,
+      "keskipisteet": 6.81,
       "kultaa": 0,
       "hopeaa": 46,
       "pronssia": 1
